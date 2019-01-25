@@ -62,7 +62,6 @@ __WARNING__: В первой версии реализуем только вхо
             Accept-Language: en-US
     
     + Attributes
-            
         - One of
             - Properties
                 - auth_provider: social (required, fixed) - authentication provider
@@ -154,6 +153,7 @@ __WARNING__: В первой версии реализуем только вхо
             Accept-Language: en-US
 
 + Response 200 (application/json)
+
     + attributes
         - data
             - results (array)
@@ -334,8 +334,28 @@ i.e. User Profile
 + Response 200 (application/json)
 
     + Attributes
+    
         - data 
             - address (Address)
+
+### Remove address [DELETE /me/addresses/{id}]
+
++ Parameters
+    + id (required, string, `1`) - Address ID
+    
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+            
++ Response 200 (application/json)
+
+    + Attributes
+    
+        - data: null
 
 ## User Avatar [/me/avatar] 
 <!-- or [/users/me/avatar] -->
@@ -511,7 +531,7 @@ i.e. User Profile
 
 Получение списка категорий.
 С помощью параметра depth задается глубина вложенности.
-Если используется флаг `interests=true`, то необходимо вернуть только те категории, которые являются интересамм.  
+Если используется флаг `interests=true`, то необходимо вернуть только те категории, которые являются интересами.  
 Если depth не задан или равен 0, то возвращается полная иерархия для указанной категории.
 
 + Parameters
@@ -677,9 +697,9 @@ i.e. User Profile
 
 # Group Favorites
 
-## Favorite Products [/favorite/products]
+## Favorite Products [/favorites/products]
 
-### Fetch [GET /favorite/products{?page,limit}]
+### Fetch [GET /favorites/products{?page,limit}]
 
 Получение ленты избранных товаров.
 
@@ -694,7 +714,6 @@ i.e. User Profile
             x-mapi-access-token: `access_token`
             x-mapi-key: xxxxxxxxxxxxxxxx
             Accept-Language: en-US
-        
 
 + Response 200 (application/json)
 
@@ -722,7 +741,7 @@ i.e. User Profile
             Accept-Language: en-US
             
     + Attributes
-        - id: <product_id> (string, required) - Product id
+        - id: <product_id> (string, required) - Product identifier
         - sku: <sku_id> (SKU, optional) - SKU
             
 + Response 200 (application/json)
@@ -735,6 +754,33 @@ i.e. User Profile
             
     + Attributes
         - data
+            - product (Product, required)
+
+### Remove [DELETE /favorites/products/{id}]
+
+Удалить из избранного.
+
++ Parameters
+    + id (required, string, `1`) - Product ID
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+            
++ Response 200 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data: null
 
 ## Favorite Shops [/favorite/shops]
 
@@ -767,6 +813,59 @@ i.e. User Profile
             - results (array[Shop], required)
             - navigation (Navigation, required)
 
+### Add [POST]
+
+Добавить в избранные магазины.
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+            
+    + Attributes
+        - id: <shop_id> (string, required) - Shop identifier
+            
++ Response 200 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data
+            - shop (Shop, required)
+
+### Remove [DELETE /favorites/shops/{id}]
+
+Удалить из избранного.
+
++ Parameters
+    + id (required, string, `1`) - Shop ID
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+            
++ Response 200 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data: null
+
 # Group Search
 
 ## Products Searching [/search/products]
@@ -780,6 +879,13 @@ i.e. User Profile
             x-mapi-access-token: `access_token`
             x-mapi-key: xxxxxxxxxxxxxxxx
             Accept-Language: en-US
+            
+    + Attributes
+        
+        - limit: 20 (number, optional) - Max quantity of records per page
+        - page: 1 (number, optional) - Index of a page
+        - query: AnyString (string, optional) - Search query
+        - category_id: <cat_id> (string, optional) - Category ID
 
 + Response 200 (application/json)
 
@@ -788,6 +894,11 @@ i.e. User Profile
             x-mapi-access-token: `access_token`
             x-mapi-access-exp: 2019-01-28T17:39:57.620Z
             x-mapi-version: 1.0
+            
+    + Attributes
+        + data
+            - results (array[Product], required)
+            - navigation (Navigation, required)
 
 ## Shops [/shops]
 
@@ -800,6 +911,13 @@ i.e. User Profile
             x-mapi-access-token: `access_token`
             x-mapi-key: xxxxxxxxxxxxxxxx
             Accept-Language: en-US
+            
+    + Attributes
+        
+        - limit: 20 (number, optional) - Max quantity of records per page
+        - page: 1 (number, optional) - Index of a page
+        - query: AnyString (string, optional) - Search query
+        - category_id: <cat_id> (string, optional) - Category ID
 
 + Response 200 (application/json)
 
@@ -808,6 +926,11 @@ i.e. User Profile
             x-mapi-access-token: `access_token`
             x-mapi-access-exp: 2019-01-28T17:39:57.620Z
             x-mapi-version: 1.0
+            
+    + Attributes
+        + data
+            - results (array[Shop], required)
+            - navigation (Navigation, required)
 
 # Group Cart
 
@@ -880,7 +1003,7 @@ i.e. User Profile
             "count": 1
         }
 
-## Pieces Count setting [/cart/set_count]
+## Setting of Pieces Count [/cart/set_count]
 
 ### Set Count [PUT]
 
@@ -911,6 +1034,9 @@ i.e. User Profile
 
 Удалить товар из корзины
 
++ Parameters
+    + id (required, string, `1`) - Product ID
+    
 + Request
    
     + Headers
@@ -918,9 +1044,6 @@ i.e. User Profile
             x-mapi-access-token: `access_token`
             x-mapi-key: xxxxxxxxxxxxxxxx
             Accept-Language: ru-RU
-             
-+ Parameters
-    + id (required, string, `1`) - Product ID
     
 + Response 200 (application/json)
 
@@ -959,8 +1082,13 @@ i.e. User Profile
 
 # Group Orders
 
+# Group Comments
+
 # Group Reviews
-<!-- TODO -->
+<!-- TODO Later -->
+
+# Group Users
+<!-- TODO Later -->
 
 ## Data Structures
 
