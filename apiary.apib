@@ -1,0 +1,1206 @@
+FORMAT: 1A
+HOST: http://polls.apiblueprint.org/
+
+# ToBox MP (Marketplace MAPI)
+
+ToBox MP (or MAPI) is a mobile REST API to interact with ToBox Marketplace.
+
+## General provisions
+- Тексты (в т.ч. error messages) возвращаются локализованные с учетом заголовочного параметра Accept-Language (ru или en-US)
+- Если в заголовке не задан Content-Type, то по умолчанию запрос принимается в формате application/json (кроме случаев, описанных явно).
+- Если в заголовке не задан Accept, то по умолчанию response ожидается в формате application/json.
+- C каждым запросом в заголовке передается API Key (x-mapi-key). //Нужно ли?
+- С каждым запросом, где требуется авторизованный доступ, в заголовке передается токен доступа x-mapi-access-token, выданный сервером. (или используем jwt?)
+- В любом ответе (response) в заголовке может содержаться токен доступа x-mapi-access-token и срок истечения токена x-mapi-access-exp.
+- При запросе с невалидным токеном пользователя возвращается ошибка со статус кодом 401 (Unauthorized).
+- Значения ключей объектов (полей) должны быть в формате under_score.
+- Версия API задается с помощью необязательного заголовочного параметра x-mapi-version. Если параметр не задан, то используется наиболее свежая версия.
+- По умолчанию response (если не пустой) на корневом уровне должен содержать JSON-объект. 
+- Основные результаты запроса должны содержаться в объекте-обертке `data`. 
+    ```
+    { "data": {...} } - если ожидается объект
+    
+    или
+    
+    { "data": { "results": [...] } } - если ожидается массив
+    ```
+- В случае, если ответ от сервера не требуется, но ожидается подтверждение того, что внутренняя логика отработала успешно, то достачно вернуть response вида:
+    ```
+    { "data": null }
+    ```
+- Формат ответа для всех методов в случае ошибки (объект Error): 
+    ```
+    {
+        "error": {
+            "code": 123, // Inner code
+            "message": "Something bad"
+        }
+    }
+    ```
+- Ответ не должен содержать одновременно объекты data и error.
+- Для пагинации по спискам в запросе возможно указать номер страницы (page, счет всегда начинается с 1) и кол-во записей на страницу (limit, по умолчанию 20). 
+- Для запросов с пагинацией в response внутри объекта data добавляется объект Navigation.
+
+# Group Auth
+
+## Authentication [/auth]
+
+### Sign In [POST /auth/sign_in]
+
+Аутентификация пользователя (разными способами). Возвращает в заголовке токен доступа пользователя (access token) 
+и токен обновления (refresh token), а также сроки их жизни.
+Полученные в ответе токены сохраняются на клиенте. Далее access token передается в каждом запросе, 
+refresh token - только в запросах на обновление токенов.
+
+__WARNING__: В первой версии реализуем только вход через соц. сети. 
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+    
+    + Attributes
+            
+        - One of
+            - Properties
+                - auth_provider: social (required, fixed) - authentication provider
+                - codename (Social Net, required) - codename of a social network 
+                - token: token_value (string, required) - token from social network 
+                - params (object, optional) - additional parameters if needed
+            - Properties
+                - auth_provider: email (required, fixed)
+                - email (string, required)
+                - password (string, required)
+
++ Response 204 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-refresh-token: `refresh_token`
+            x-mapi-refresh-exp: 2019-02-28T17:39:57.620Z
+            x-mapi-version: 1.0
+         
+### Sign In Anonymously [POST /auth/anonymous]
+
+Возвращает токен нового анонимного пользователя.
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+
++ Response 204 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: <anonymous_token>
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-refresh-token: `refresh_token`
+            x-mapi-refresh-exp: 2019-02-28T17:39:57.620Z
+            x-mapi-version: 1.0         
+         
+### Refresh Token [POST /auth/refresh]
+
+Возвращает обновленный access token существующего пользователя, если в header'е запроса валидные access token и refresh token.
+При запросе с невалидными токенами возвращает ошибку 401 Unauthorized.
+Если access token валидный, но не хватает полномочий, то возвращает ошибку 403.
+Полученный access токен сохраняется на клиенте и далее передается в заголовке каждого запроса.
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `old_access_token`
+            x-mapi-refresh-token: `old_refresh_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+
++ Response 204 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: <access_token>
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+        
++ Response 403 (application/json)
+
+    + Attributes
+        - error (Error, required)
+
+# Group Common
+            
+## Web Pages [/web_pages/{key}]
+
++ Parameters
+    + key (Web Page Key, optional, `about`) - key name of a web page (enum is defined in Data Structures section)
+
+### Get Pages [GET]
+
+Получение контента веб страниц. Если не указан параметр с конкретной web-страницей, то по умолчанию возвращать все страницы.
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+
++ Response 200 (application/json)
+    + attributes
+        - data
+            - results (array)
+                - (object)
+                    - key (Web Page Key)
+                    - url: https://destination_href (string, required) - web page url
+                    - content: html_content (string, optional) - content in html format
+
+# Group Me 
+
+i.e. User Profile
+
+## Personal Info [/me] 
+<!-- or [/users/me] -->
+
+### Get Personal Profile [GET]
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+
++ Response 200 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data 
+            - user (User Extended)
+
+### Update Personal Profile (General Info) [PATCH]
+
+[Необходимость метода под вопросом, т.к. данная информация (в частности имя) должна браться из соц.сетей.]
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+    
+    + Attributes
+        + name: John Dow (required) - user's name or user's id if name wasn't set yet 
+        + last_name: Dow (optional) - user's last name
+        + birthday: `1990-06-01T18:06:28.620Z` (optional) - date-time of user's birthday
+
++ Response 200 (application/json)
+    
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+    
+    + Attributes
+        - data 
+            - user (User Extended)
+
+## Birthday [/me/birthday]
+<!-- or [/users/me/birthday] -->
+
+### Get birthday date [GET]
+    
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+
++ Response 200 (application/json)
+    
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+    
+    + Attributes
+        - data
+            - birthday: `1990-06-01T18:06:28.620Z` (string, required) - date-time of user's birthday
+
+### Set birthday date [PATCH]
+    
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+    
+    + Attributes
+        - birthday: `1990-06-01T18:06:28.620Z` (required) - date-time of user's birthday
+
++ Response 200 (application/json)
+    
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+    
+    + Attributes
+        - data
+            - birthday: `1990-06-01T18:06:28.620Z` (required) - date-time of user's birthday
+
+## Addresses [/me/addresses]
+<!-- or [/users/me/addresses] -->
+
+### List addresses [GET]
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+            
++ Response 200 (application/json)
+
+    + Attributes
+        - data 
+            - results (array[Address])
+
+### Create address [POST]
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+            
+    + Attributes
+        + title: Main (string, optional) - address name given by user
+        + first_name: John Dow (string, required) - receiver's first name
+        + last_name: Dow (string, required) - receiver's last name
+        + country: US (string, required) - ISO-3166-1 country code
+        + region: CA (string, optional) - US States Abbreviations - 2 symbols
+        + city: City17 (string, required) - name of the city
+        + zip: 101000abc (string, required) - zip code
+        + line1: Unknown Street 123 (string, required) - main line for address
+        + line2: Apt. 1 (string, optional) - second line for address
+        + phone: 79991234567 (number, required) - phone number
+        + email: john.dow@example.com (string, required) - receiver's email
+            
++ Response 201 (application/json)
+
+    + Attributes
+        - data 
+            - address (Address)
+
+### Update address [PATCH]
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+            
+    + Attributes
+        - Include Address
+            
++ Response 200 (application/json)
+
+    + Attributes
+        - data 
+            - address (Address)
+
+## User Avatar [/me/avatar] 
+<!-- or [/users/me/avatar] -->
+
+### Upload User Avatar [POST]
+
+[Необходимость метода под вопросом, т.к. аватар должен браться из соц.сетей.]
+
++ Request (multipart/form-data; boundary={boundary value})
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+    
+    + Body
+        
+            --{boundary value}
+                Content-Disposition: form-data; name="image"; filename="image.png"
+                Content-Type: image/png
+        
+                {file content}
+            --{boundary value}--
+            
++ Response 201 (application/json)
+    
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data
+            - avatar: https://user_avatar_cdn_href (string, required) - user's avatar url
+
+## Gender [/me/gender]
+<!-- or [/users/me/gender] -->
+
+### Retrieve User Gender [GET]
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+
++ Response 200 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data
+            - gender (Gender, required)
+
+### Change User Gender [PATCH]
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+            
+    + Attributes
+        - gender (Gender, required)
+
++ Response 200 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data
+            - gender (Gender, required)
+
+## Interests [/me/interests]
+<!-- or [/users/me/interests] -->
+
+### List personal interests [GET]
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+
++ Response 200 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data 
+            - results (array[Interest], required)
+
+### Update personal interests [POST]
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+            
+    + Attributes
+        - interests_diff
+            - excluded: id1, id2 (array[string], required) - List of ids to delete from personal interests
+            - included: id3, id4 (array[string], required) - List of ids to add to personal interests 
+
++ Response 200 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data 
+            - results (array[Interest], required)
+
+# Group Interests
+
+## All interests [/interests]
+
+[Возможно это частный случай Categories.]
+
+### List interests [GET]
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+
++ Response 200 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data 
+            - results (array[Interest], required)
+
+# Group Categories
+
+## Categories [/categories]
+
+### List categories [GET /categories{?depth,interests}]
+
+Получение списка категорий.
+С помощью параметра depth задается глубина вложенности.
+Если используется флаг `interests=true`, то необходимо вернуть только те категории, которые являются интересамм.  
+Если depth не задан или равен 0, то возвращается полная иерархия для указанной категории.
+
++ Parameters
+    + depth: 2 (optional, number) - Depth of a hierarchy to fetch
+    + interests: false (optional, boolean) - Whether to return only those categories that are tagged as interests or not
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+
++ Response 200 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data
+            - results (array[Category], required)
+
+### Retrieve a single Category node [GET /categories/{id}]
+
++ Parameters
+
+    + id (string, optional, `1`) - Category ID
+    
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+
++ Response 200 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data 
+            - category (Category, required)
+
+# Group Feeds
+
+## Home Feed [/feeds/home]
+
+### Retrieve Home Feed [POST]
+
+Получение ленты Home. 
+
+Возвращает 2 основных объекта: фильтр (filter) и саму ленту (feed).
+
+Фильтр содержит массив объектов типа `Interest` (интересы пользователя). [__Info__: тут пока под вопросом нужно ли возвращать весь список доступных интересов, если пользователь еще ничего не выбрал].
+
+Лента разбита на секции (sections), которые могут содержать объекты header, footer и коллекцию entities.
+
+Объект `navigation` используется для пагинации.
+
+Товары должны возвращаться отфильтрованные с учетом пола, даты рождения и интересов пользователя, т.е. на основе данных, которые уже есть в системе.
+Кроме того, для фильтрации товаров можно дополнительно использовать параметр interests (массив идентификаторов).
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+            
+    + Attributes
+        - limit: 20 (number, optional) - Max quantity of records per page
+        - page: 1 (number, optional) - Index of a page
+        - interests: 1, 5 (array[string], optional) - identifiers of interests
+            
++ Response 200 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data
+            - filter (required)
+                - interests (array[Interest], required)
+            - feed (required)
+                - sections (required)
+                    - banners (optional)
+                        - order_num: 0 (number, required) - order number of a section
+                        - header (object, optional)
+                        - entities (array[Banner], optional)
+                        - footer (object, optional)
+                    - products (required)
+                        - order_num: 1 (number, required) - order number of a section
+                        - header (object, optional)
+                            - title: Section Title if needed (optional)                    
+                        - entities (array[Product], required)
+                - navigation (Navigation, required)
+
+# Group Products
+
+## Product [/products/{id,sku}]
+
++ Parameters
+
+    + id (string, required, `1`) - Product ID
+    + sku (SKU, required, `sku_id_example`) - SKU
+
+### Get Product [GET]
+
+Получение товара по ID и SKU
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+            
++ Response 200 (application/json)
+    
+    + Attributes
+        - data 
+            - product (Product Extended)
+
+# Group Shops
+
+## Shop [/shops/{id}]
+
+### Get Shop [GET]
+
+Получение данных о магазине.
+
++ Parameters
+
+    + id (string, required, `123`) - Shop ID
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+            
++ Response 200 (application/json)
+    
+    + Attributes
+        - data 
+            - shop (Shop Extended)
+
+# Group Favorites
+
+## Favorite Products [/favorite/products]
+
+### Fetch [GET /favorite/products{?page,limit}]
+
+Получение ленты избранных товаров.
+
++ parameters
+    - limit: 20 (number, optional) - Max quantity of records per page
+    - page: 1 (number, optional) - Index of a page
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+        
+
++ Response 200 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        + data
+            - results (array[Product], required)
+            - navigation (Navigation, required)
+
+### Add [POST]
+
+Добавить в избранные товары.
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+            
+    + Attributes
+        - id: <product_id> (string, required) - Product id
+        - sku: <sku_id> (SKU, optional) - SKU
+            
++ Response 200 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data
+
+## Favorite Shops [/favorite/shops]
+
+### List [GET /favorite/shops{?page,limit}]
+
+Получение ленты избранных магазинов.
+
++ parameters
+    - limit: 20 (number, optional) - Max quantity of records per page
+    - page: 1 (number, optional) - Index of a page
+    
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+
++ Response 200 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        + data
+            - results (array[Shop], required)
+            - navigation (Navigation, required)
+
+# Group Search
+
+## Products Searching [/search/products]
+
+### Fetch products [POST]
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+
++ Response 200 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+
+## Shops [/shops]
+
+### Fetch shops [POST]
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+
++ Response 200 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+
+# Group Cart
+
+## Cart Items [/cart]
+
+### Retrieve Cart [GET]
+
+Получение корзины пользователя.
+
++ Request
+   
+    + Headers
+       
+             x-mapi-access-token: `access_token`
+             x-mapi-key: xxxxxxxxxxxxxxxx
+             Accept-Language: ru-RU
+             
++ Response 200 (application/json)
+
+    + Header
+    
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+    
+    + Attributes
+        - Include Cart        
+
+## Items total quantity [/cart/count]
+
+### Get [GET]
+
++ Request
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: ru-RU
+             
++ Response 200 (application/json)
+
+        {
+            "totalItems": 1
+        }
+
+## Addition to Cart [/cart/add]
+
+### Add to Cart [POST]
+
+Добавление товара в корзину.
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: ru-RU
+             
+    + Body
+        
+            {   
+                "id": "<productId>",
+                "count": 1
+            }
+             
++ Response 200 (application/json)
+
+        {
+            "count": 1
+        }
+
+## Pieces Count setting [/cart/set_count]
+
+### Set Count [PUT]
+
+Задать количество единиц товара в корзине (>= 0).
+
++ Request (application/json)
+   
+    + Headers
+            
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: ru-RU
+             
+    + Attributes
+        
+        - id: <product_id> (string, required)
+        - count: 1 (number, required)
+    
++ Response 200 (application/json)
+
+        {
+            "count": 1
+        }
+
+## Removing [/cart/remove/{id}] 
+
+### Delete item [DELETE]
+
+Удалить товар из корзины
+
++ Request
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: ru-RU
+             
++ Parameters
+    + id (required, string, `1`) - Product ID
+    
++ Response 200 (application/json)
+
+        {
+            "count": 0
+        }
+        
+## Activate promo code [/cart/activate_promo]
+
+### Activate [POST]
+
+Активировать промо код в корзине
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+             
+    + Body
+        
+            {   
+                "id": "<product_id>"
+                "promo": "qwerty"
+            }
+    
++ Response 200 (application/json)  
+    + Attributes
+        - data 
+            - cart (Cart, required)
+            
+
+# Group Checkout
+
+# Group Orders
+
+# Group Reviews
+<!-- TODO -->
+
+## Data Structures
+
+### Address
++ id: <address_id> (string, required) - The unique identifier for an address
++ title: Main (string, required) - Address name given by user
++ country: US (string, required) - ISO-3166-1 country code
++ state: CA (string, required) - US States Abbreviations [2 symbols] for country == US
++ region: null (string, required) - Region if country is not US 
++ city: City17 (string, required) - Name of the city
++ zip: 101000abc (string, required) - ZIP code
++ line1: Unknown Street 123 (string, required) - Main line for address
++ line2: Apt. 1 (string, optional) - Second line for address
++ street: Main Avenue (string, optional) - Street name
++ block: null (optional) - block identifier // корпус
++ building: 1 (optional) - building number  // строение
++ house: 5 (optional) - house number
++ apartment: null (optional) - apartment number
++ first_name: John Dow (string, required) - Receiver's first name
++ last_name: Dow (string, required) - Receiver's last name
++ phone: 9991234567 (number, required) - Phone number without country code
++ email: john.dow@example.com (string, required) - Receiver's email
+
+### Attribute
++ id: <attribute_id> (string, required) - The unique identifier for an attribute
++ key: size (string, required) - key of the attribute
++ name: Size (string, required) - name of the attribute
++ value: L (string, required) - associated value of the attribute
+
+### Banner
++ id: <banner_id> (string, required) - The unique identifier for banner
++ title: Banner title (optional)
++ title_color: #ffffff (string, optional)
++ image: https://banner_cdn_href (string, required)
++ destination (Destination, required)
+
+### Cart
++ items (array[Cart Item], required) - array of cart items
++ total_items: 1 (number, required) - number of items
++ total_price (Price, required)
++ received_at: `2017-06-01T18:06:28.620Z` (required) - date-time of cart retriving
+
+### Cart Item
++ id: <item_id> (required) - The unique identifier for cart item
++ sku_id: <sku_id> (required) - The unique sku number
++ product (Product, required)
++ promo_applied (boolean, required) - Is promo code applied to product
+
+### Category Base
++ id: 310 (string, required) - The unique identifier for a category
++ name: Clothes (string, required) - Category name
++ thumbnail: https://category_thumbnail_cdn_href (string, required)
+
+### Category 
++ include Category Base
++ parent_id: null (required) - The unique identifier of parent category
++ depth: 1 (number, required) - The depth of hierarchy for current category
++ children_count: 1 (number, required) - Number of subcategories
++ children (array[Category], required) - Array of subcategories
++ products_count: 14 (number, required) - Number of products on this level
++ is_interest: true (boolean, required) - Whether this category is interest or not
++ is_my_interest: false (boolean, required) - Whether this category is belongs to interests of current user or not
+
+### Content Block
++ subtitle: BlockTitle (string, optional)
++ text: Long text (string, optional)
++ image: <image_cdn_href> (string, optional)
+
+### DeliveryType (enum)
++ 0 (number) - pickup
++ 1 (number) - courier
+
+### Destination
+The Object that contains info about possible target destination 
++ url: <destination_url> (string, required) - Target destination url
++ type: product (string, required) - Destination type
++ id: <id> (string, required) - The unique identifier for destination
+
+### Error
++ code: 123 (number, required) - Error code
++ message: Something bad (required) - Error message
+
+### Gender (enum)
++ 0 (number) - male
++ 1 (number) - female
+
+### Interest
++ include Category Base
++ is_my: true (boolean, required) - Is in the list of my interests or not
+
+### Navigation
++ total_count: 100000 (required, number) - Total count of items
++ current_page: 1 (required, number) - Current page index
++ page_size: 10 (required, number) - Number of items per page
++ page_count: 10000 (required, number) - Number of pages
+
+### PaymentType (enum)
++ 0 (number) - cash 
++ 1 (number) - bank_card
+
+### Price
++ currency: USD (string, required)
++ value: 85.99 (number, required)
++ symbol: $ (string, required)
+
+### Product 
++ id: <id> (string, required) - The unique identifier for a product
++ title: Photoball (string, required) - Name of the product
++ description: Text (string, required) - Description of the product
++ views_count: 100516 (number, required) - Number of views
++ likes_count: 45 (number, required) - Number of likes
++ purchased_count: 100 (number, required) - Number of purchased units
++ shop (Shop, required)
++ images: <image1_cdn_href>, <image2_cdn_href> (array[string], required) - Array of image urls 
++ videos (array[Video], required)
++ price (Price, required)
++ discounted_price (Price, required)
++ disc_percent: `-5` (required) - Discount percentage
++ category (Category, required)
++ destination (Destination, optional)
++ created_at: `2017-06-01T18:06:28.620Z` (required) - Date-time of product creation
++ updated_at: `2017-06-28T17:39:57.620Z` (required) - Date-time of last product update
++ is_favorite: false (boolean, required) - Is product contained in the user's Favorites
++ is_in_cart: false (boolean, required) - Is product contained in the user's Cart
++ tags -  Object with additional flags
+    + is_hit: false (boolean)
+    + is_new: false (boolean)
+    + is_suggested: true (boolean)
++ label (required)
+    + title: Sale (optional)
+    + value: null (optional)
++ rating: 4.9 (number, required) - Decimal rating of the product
++ reviews_count: 217 (number, required) - Number of reviews
+
+### Product Extended
++ Include Product
++ warranty
+    + title: We are on your side (required)
+    + blocks (array[Content Block], required) - Array of information blocks
++ details
+    + subtitle: Review (string, optional)
+    + blocks (array[Content Block], required) - Array of Review blocks
++ variants 
+    + *sku_id_example (SKU)* (Variant, required)
++ shipping (Shipping, required) - Info about shipping
++ user_reviews
+    + total_count: 15 (number, required) - Total number of reviews of this product
+    + rating: 4.5 (number, required) - Decimal rating of the product
+    + recent (array[User Review], required) - Array of top N reviews
+    + my (array[User Review], required) - Array of reviews that belongs to current user
+
+### Shipping
++ id: shipping_id (string, required)
++ title: Free Shipping (required)
++ interval: 15 - 20  days (string, required)
++ price (Price, required) - Delivery price
++ sale_tax (Price, required) - Tax if needed
+
+### Seller
++ Include User
+
+### Shop
++ id: <id> (string, required) - The unique identifier for a shop
++ owner (Seller, required) - Info about user owning the shop
++ name: Shop Name (string, required) - Name of the shop
++ description: The Best Shop Ever (string, required) - Description of the shop
++ media
+    + avatar: https://shop_avatar_cdn_href (string, required) - Shop avatar url
+    + cover: https://cover_avatar_cdn_href (string, optional) - Shop background url if needed
++ rating: 4.5 (number, required) - Decimal rating value
++ products_count: 114 (number, required) - Total number of products 
++ addresses (array[Address])
++ payment_types (array[PaymentType], required)
++ delivery_types (array[DeliveryType], required)
++ orders_count: 100 (number, required) - Number of orders
++ likes_count: 45 (number, required) - Number of likes
++ stock_count: 500 (number, required) - Number of units
++ is_favorite: true (boolean) - Whether this shop is in user's favorites list or not
+
+### Shop Extended
++ Include Shop
++ 
+
+### SKU (string) - Stock Keeping Unit
+
+### Social Net (enum)
++ fb
++ ok
++ google
+
+### Video
++ url: https://cdn_url_video.m3u8 (string, required) - Video streem url
++ thumbnail: https://thumbnail_cdn_href (string, required) - Thumbnail url
+
+### `URL_string` (string)
+
+### User
++ id: user_id (string, required) - The unique identifier for a user
++ name: John Dow (string, required) - User's name //  возможно из соц. сети...
++ avatar: https://avatar_cdn_href (string, required) - User avatar url // возможно из соц. сети, как в Joom??
++ social_profile (object) - // необходимость такого объекта под вопросом
+    + network (Social Net, required)
+    + user_id: <social_id> (string, optional) - user id in social network 
+    + name: John Dow (string, required)
+    + avatar: https://avatar_cdn_href (string, required)
+
+### User Extended
++ Include User
++ email: john.dow@example.com (optional) - User's email // возможно здесь не нужно, т.к. контакты у нас в адресах
++ birthday: `1990-06-01T18:06:28.620Z` (required) - Date-time of user's birthday
++ gender (Gender, required) - User's gender
++ addresses (array[Address], required) - List of user's addresses
++ reviews_count: 1 (number, required) - Number of reviews
++ orders_count: 5 (number, required) - Number of user orders
++ following_count: 3 (number, required) - Number of user subscriptions
+
+### User Review
++ id: <reviewID> (string, required) - The unique identifier for a review
++ rating: 5 (number, required) - Rating given by user
++ user (User, required)
++ created_at: `2017-06-01T18:06:28.620Z` (required) - Date-time of review creation
++ updated_at: `2017-06-28T17:39:57.620Z` (required) - Date-time of review updte
++ title: Title (optional)
++ body: Text of review (required)
++ is_my: false (required) - Whether this review is user's own review or not
++ i_liked: true (required) - Whether user liked this review or not
++ likes_count: 4 (required) - Number of likes
++ pics (array[URL_string], required) - Images uploaded by user
+
+### Variant
++ sku: sku_id_example (SKU, required) - SKU identifier of a combination
++ title: Article123 (string, required) - text for the variant
++ attributes (array[Attribute]) - Array of attributes like color, size, custom
++ images: <image1_cdn_href>, <image2_cdn_href> (array[string], optional) - Array of image urls 
++ videos (array[Video], optional) 
++ is_available: true (boolean, required) - is the variant available or not
++ stock_count: 5 (number, required) - number of units
+
+### Web Page Key (enum)
++ `about`
++ `terms_of_use`
++ `privacy_policy`
++ `warranty`
