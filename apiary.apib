@@ -138,7 +138,7 @@ __WARNING__: В первой версии реализуем только вхо
 ## Web Pages [/web_pages/{key}]
 
 + Parameters
-    + key (Web Page Key, optional, `about`) - key name of a web page (enum is defined in Data Structures section)
+    - key (Web Page Key, optional, `about`) - key name of a web page (enum is defined in Data Structures section)
 
 ### Get Pages [GET]
 
@@ -204,9 +204,9 @@ i.e. User Profile
             Accept-Language: en-US
     
     + Attributes
-        + name: John Dow (required) - user's name or user's id if name wasn't set yet 
-        + last_name: Dow (optional) - user's last name
-        + birthday: `1990-06-01T18:06:28.620Z` (optional) - date-time of user's birthday
+        - name: John Dow (required) - user's name or user's id if name wasn't set yet 
+        - last_name: Dow (optional) - user's last name
+        - birthday: `1990-06-01T18:06:28.620Z` (optional) - date-time of user's birthday
 
 + Response 200 (application/json)
     
@@ -300,17 +300,7 @@ i.e. User Profile
             Accept-Language: en-US
             
     + Attributes
-        + title: Main (string, optional) - address name given by user
-        + first_name: John Dow (string, required) - receiver's first name
-        + last_name: Dow (string, required) - receiver's last name
-        + country: US (string, required) - ISO-3166-1 country code
-        + region: CA (string, optional) - US States Abbreviations - 2 symbols
-        + city: City17 (string, required) - name of the city
-        + zip: 101000abc (string, required) - zip code
-        + line1: Unknown Street 123 (string, required) - main line for address
-        + line2: Apt. 1 (string, optional) - second line for address
-        + phone: 79991234567 (number, required) - phone number
-        + email: john.dow@example.com (string, required) - receiver's email
+        - address (Address) - Object Address but without id
             
 + Response 201 (application/json)
 
@@ -341,7 +331,7 @@ i.e. User Profile
 ### Remove address [DELETE /me/addresses/{id}]
 
 + Parameters
-    + id (required, string, `1`) - Address ID
+    - id (required, string, `1`) - Address ID
     
 + Request (application/json)
    
@@ -497,7 +487,7 @@ i.e. User Profile
 
 # Group Interests
 
-## All interests [/interests]
+## Collection [/interests]
 
 [Возможно это частный случай Categories.]
 
@@ -525,18 +515,18 @@ i.e. User Profile
 
 # Group Categories
 
-## Categories [/categories]
+## Collection [/categories]
 
 ### List categories [GET /categories{?depth,interests}]
 
 Получение списка категорий.
 С помощью параметра depth задается глубина вложенности.
-Если используется флаг `interests=true`, то необходимо вернуть только те категории, которые являются интересами.  
 Если depth не задан или равен 0, то возвращается полная иерархия для указанной категории.
+Если используется флаг `interests=true`, то необходимо вернуть только те категории, которые являются интересами.
 
 + Parameters
-    + depth: 2 (optional, number) - Depth of a hierarchy to fetch
-    + interests: false (optional, boolean) - Whether to return only those categories that are tagged as interests or not
+    - depth: 2 (optional, number) - Depth of a hierarchy to fetch
+    - interests: false (optional, boolean) - Whether to return only those categories that are tagged as interests or not
 
 + Request (application/json)
    
@@ -558,11 +548,13 @@ i.e. User Profile
         - data
             - results (array[Category], required)
 
-### Retrieve a single Category node [GET /categories/{id}]
+## Single [/categories/{id}]
+
+### Retrieve a single Category node [GET]
 
 + Parameters
 
-    + id (string, optional, `1`) - Category ID
+    - id (string, optional, `1`) - Category ID
     
 + Request (application/json)
    
@@ -648,12 +640,12 @@ i.e. User Profile
 
 + Parameters
 
-    + id (string, required, `1`) - Product ID
-    + sku (SKU, required, `sku_id_example`) - SKU
+    - id (string, required, `1`) - Product ID
+    - sku (SKU, optional, `sku_id_example`) - SKU
 
 ### Get Product [GET]
 
-Получение товара по ID и SKU
+Получение товара по ID и/или SKU
 
 + Request (application/json)
    
@@ -724,7 +716,7 @@ i.e. User Profile
             x-mapi-version: 1.0
             
     + Attributes
-        + data
+        - data
             - results (array[Product], required)
             - navigation (Navigation, required)
 
@@ -742,7 +734,6 @@ i.e. User Profile
             
     + Attributes
         - id: <product_id> (string, required) - Product identifier
-        - sku: <sku_id> (SKU, optional) - SKU
             
 + Response 200 (application/json)
 
@@ -758,10 +749,10 @@ i.e. User Profile
 
 ### Remove [DELETE /favorites/products/{id}]
 
-Удалить из избранного.
+Удалить товар из избранных.
 
 + Parameters
-    + id (required, string, `1`) - Product ID
+    - id (required, string, `1`) - Product ID
 
 + Request (application/json)
    
@@ -809,7 +800,7 @@ i.e. User Profile
             x-mapi-version: 1.0
             
     + Attributes
-        + data
+        - data
             - results (array[Shop], required)
             - navigation (Navigation, required)
 
@@ -842,10 +833,10 @@ i.e. User Profile
 
 ### Remove [DELETE /favorites/shops/{id}]
 
-Удалить из избранного.
+Удалить магазин из избранных.
 
 + Parameters
-    + id (required, string, `1`) - Shop ID
+    - id (required, string, `1`) - Shop ID
 
 + Request (application/json)
    
@@ -868,7 +859,7 @@ i.e. User Profile
 
 # Group Search
 
-## Products Searching [/search/products]
+## Products [/search/products]
 
 ### Fetch products [POST]
 
@@ -884,8 +875,7 @@ i.e. User Profile
         
         - limit: 20 (number, optional) - Max quantity of records per page
         - page: 1 (number, optional) - Index of a page
-        - query: AnyString (string, optional) - Search query
-        - category_id: <cat_id> (string, optional) - Category ID
+        - Include Search Params
 
 + Response 200 (application/json)
 
@@ -900,7 +890,7 @@ i.e. User Profile
             - results (array[Product], required)
             - navigation (Navigation, required)
 
-## Shops [/shops]
+## Shops [/search/shops]
 
 ### Fetch shops [POST]
 
@@ -916,8 +906,7 @@ i.e. User Profile
         
         - limit: 20 (number, optional) - Max quantity of records per page
         - page: 1 (number, optional) - Index of a page
-        - query: AnyString (string, optional) - Search query
-        - category_id: <cat_id> (string, optional) - Category ID
+        - Include Search Params
 
 + Response 200 (application/json)
 
@@ -928,7 +917,7 @@ i.e. User Profile
             x-mapi-version: 1.0
             
     + Attributes
-        + data
+        - data
             - results (array[Shop], required)
             - navigation (Navigation, required)
 
@@ -944,23 +933,91 @@ i.e. User Profile
    
     + Headers
        
-             x-mapi-access-token: `access_token`
-             x-mapi-key: xxxxxxxxxxxxxxxx
-             Accept-Language: ru-RU
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
              
 + Response 200 (application/json)
 
-    + Header
+    + Headers
     
             x-mapi-access-token: `access_token`
             x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
     
     + Attributes
-        - Include Cart        
+        - data
+            - Include Cart
 
-## Items total quantity [/cart/count]
+### Add to Cart [POST /cart/items/{sku}]
+<!-- or /cart/{sku} -->
 
-### Get [GET]
+Добавление товара в корзину.
+
++ Parameters
+    
+    - sku: sku_example (SKU, required) - SKU
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: ru-RU
+             
+    + Attributes
+        - id: <product_id> (string, optional)
+        - sku: <sku_example> (SKU, required)
+        - count: 1 (number, required)
+        - attributes (object) - size, color or custom attributes - ??
+             
++ Response 200 (application/json)
+
+     + Headers
+    
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+     + Attributes
+        - data
+            - total_count: 1 (number, required) - Total number of units in cart
+
+### Delete item [DELETE /cart/items/{sku}]
+<!-- or /cart/{sku} -->
+
+Удалить товар (sku) из корзины
+
++ Parameters
+    - sku (SKU, required, `sku_example`) - SKU
+    
++ Request
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: ru-RU
+    
++ Response 200 (application/json)
+
+    + Headers
+    
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data
+            - count: 0 (number, required)
+
+## Quantity [/cart/items/count]
+<!-- or /cart/count -->
+
+### Get Total [GET]
+
+Получить общее количество товаров.
 
 + Request
    
@@ -971,18 +1028,26 @@ i.e. User Profile
             Accept-Language: ru-RU
              
 + Response 200 (application/json)
+    
+    + Headers
+    
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data
+            - total_count: 1 (number, required) - Total number of units in the cart
 
-        {
-            "totalItems": 1
-        }
+### Get Count [GET /cart/items/{sku}/count]
+<!-- or /cart/count -->
 
-## Addition to Cart [/cart/add]
+Получить количество единиц одного товара (sku).
 
-### Add to Cart [POST]
++ Parameters
+    + sku (SKU, required, `sku_example`) - SKU
 
-Добавление товара в корзину.
-
-+ Request (application/json)
++ Request
    
     + Headers
        
@@ -990,24 +1055,26 @@ i.e. User Profile
             x-mapi-key: xxxxxxxxxxxxxxxx
             Accept-Language: ru-RU
              
-    + Body
-        
-            {   
-                "id": "<productId>",
-                "count": 1
-            }
-             
 + Response 200 (application/json)
+    
+    + Headers
+    
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data
+            - count: 1 (number, required) - Number of pcs. for the item
 
-        {
-            "count": 1
-        }
 
-## Setting of Pieces Count [/cart/set_count]
-
-### Set Count [PUT]
+### Set Count [PUT /cart/items/{sku}/count]
+<!-- or /cart/count -->
 
 Задать количество единиц товара в корзине (>= 0).
+
++ Parameters
+    + sku (SKU, required, `sku_example`) - SKU
 
 + Request (application/json)
    
@@ -1019,44 +1086,31 @@ i.e. User Profile
              
     + Attributes
         
-        - id: <product_id> (string, required)
+        - id: <product_id> (string, optional)
         - count: 1 (number, required)
     
 + Response 200 (application/json)
 
-        {
-            "count": 1
-        }
-
-## Removing [/cart/remove/{id}] 
-
-### Delete item [DELETE]
-
-Удалить товар из корзины
-
-+ Parameters
-    + id (required, string, `1`) - Product ID
-    
-+ Request
-   
     + Headers
-       
-            x-mapi-access-token: `access_token`
-            x-mapi-key: xxxxxxxxxxxxxxxx
-            Accept-Language: ru-RU
     
-+ Response 200 (application/json)
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data
+            - count: 1 (number, required) - Number of pcs. for the item
 
-        {
-            "count": 0
-        }
-        
-## Activate promo code [/cart/activate_promo]
+## Promo code [/cart/items/{sku}/promo]
+<!-- or /cart/{sku}/promo -->
 
 ### Activate [POST]
 
-Активировать промо код в корзине
+Активировать промо код для элемента корзины
 
++ Parameters
+    + sku (SKU, required, `sku_example`) - SKU
+    
 + Request (application/json)
    
     + Headers
@@ -1065,18 +1119,47 @@ i.e. User Profile
             x-mapi-key: xxxxxxxxxxxxxxxx
             Accept-Language: en-US
              
-    + Body
-        
-            {   
-                "id": "<product_id>"
-                "promo": "qwerty"
-            }
+    + Attributes
+        - promo: qwerty (string, required)
     
 + Response 200 (application/json)  
+
+    + Headers
+    
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
     + Attributes
         - data 
-            - cart (Cart, required)
+            - ack: true (boolean, required)
+
+### Deactivate [DELETE]
+
+Деактивировать промо код для элемента корзины
+
++ Parameters
+    + sku (SKU, required, `sku_example`) - SKU
+    
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+    
++ Response 200 (application/json)  
+
+    + Headers
+    
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
             
+    + Attributes
+        - data 
+            - ack: true (boolean, required)
 
 # Group Checkout
 
@@ -1126,14 +1209,15 @@ i.e. User Profile
 + destination (Destination, required)
 
 ### Cart
-+ items (array[Cart Item], required) - array of cart items
-+ total_items: 1 (number, required) - number of items
-+ total_price (Price, required)
++ results (array[Cart Item], required) - array of cart items
++ total_count: 1 (number, required) - Total number of units
++ total_price (Price, required) - Final total price
++ total_promo (Price, required) - Total value of all applied promos
 + received_at: `2017-06-01T18:06:28.620Z` (required) - date-time of cart retriving
 
 ### Cart Item
 + id: <item_id> (required) - The unique identifier for cart item
-+ sku_id: <sku_id> (required) - The unique sku number
++ sku: sku_id_example (SKU, required) - SKU identifier
 + product (Product, required)
 + promo_applied (boolean, required) - Is promo code applied to product
 
@@ -1171,6 +1255,12 @@ The Object that contains info about possible target destination
 + code: 123 (number, required) - Error code
 + message: Something bad (required) - Error message
 
+### Filter Flags
++ is_hit: false (boolean, optional)
++ is_top: false (boolean, optional)
++ is_new: false (boolean, optional)
++ is_suggested: true (boolean, optional)
+
 ### Gender (enum)
 + 0 (number) - male
 + 1 (number) - female
@@ -1178,6 +1268,19 @@ The Object that contains info about possible target destination
 ### Interest
 + include Category Base
 + is_my: true (boolean, required) - Is in the list of my interests or not
+
+### Media Item
++ type (Media Type, required) - Video or image media type
++ One of
+    - Properties
+        - url: https://cdn_url_video.m3u8 (URL_string, required) - Video streem url
+        - thumbnail: https://thumbnail_cdn_href (URL_string, required) - Thumbnail image url for preview
+    - Properties
+        - url: <image1_cdn_href> (URL_string, required) - Image url
+
+### Media Type (enum)
++ video
++ image
 
 ### Navigation
 + total_count: 100000 (required, number) - Total count of items
@@ -1202,8 +1305,7 @@ The Object that contains info about possible target destination
 + likes_count: 45 (number, required) - Number of likes
 + purchased_count: 100 (number, required) - Number of purchased units
 + shop (Shop, required)
-+ images: <image1_cdn_href>, <image2_cdn_href> (array[string], required) - Array of image urls 
-+ videos (array[Video], required)
++ media_items (array[Media Item], fixed-type) - Array of media items such as video and images.
 + price (Price, required)
 + discounted_price (Price, required)
 + disc_percent: `-5` (required) - Discount percentage
@@ -1213,13 +1315,10 @@ The Object that contains info about possible target destination
 + updated_at: `2017-06-28T17:39:57.620Z` (required) - Date-time of last product update
 + is_favorite: false (boolean, required) - Is product contained in the user's Favorites
 + is_in_cart: false (boolean, required) - Is product contained in the user's Cart
-+ tags -  Object with additional flags
-    + is_hit: false (boolean)
-    + is_new: false (boolean)
-    + is_suggested: true (boolean)
++ filter_flags (Filter Flags, required) - Object with additional flags
 + label (required)
-    + title: Sale (optional)
-    + value: null (optional)
+    + title: Sale 
+    + value: null 
 + rating: 4.9 (number, required) - Decimal rating of the product
 + reviews_count: 217 (number, required) - Number of reviews
 
@@ -1240,15 +1339,27 @@ The Object that contains info about possible target destination
     + recent (array[User Review], required) - Array of top N reviews
     + my (array[User Review], required) - Array of reviews that belongs to current user
 
+### Search Params
++ search_query: AnyString (string, optional) - Search query
++ category_id: <cat_id> (string, optional) - Category ID
++ product_ids (array[string], optional) - Array of product unique identifiers
++ shop_ids (array[string], optional) - Array of shop unique identifiers
++ Include Filter Flags (optional) - Flags for filtering
++ price_from: 10.5 (number, optional) - Minimum price for filtering
++ price_to: 100.5 (number, optional) - Maximum price for filtering
++ sort_field: name (optional) - Field name for sorting
++ sort_order (Sort Order, optional) - Sorting order
+    - default: asc
+
+### Seller
++ Include User
+
 ### Shipping
 + id: shipping_id (string, required)
 + title: Free Shipping (required)
 + interval: 15 - 20  days (string, required)
 + price (Price, required) - Delivery price
 + sale_tax (Price, required) - Tax if needed
-
-### Seller
-+ Include User
 
 ### Shop
 + id: <id> (string, required) - The unique identifier for a shop
@@ -1260,7 +1371,6 @@ The Object that contains info about possible target destination
     + cover: https://cover_avatar_cdn_href (string, optional) - Shop background url if needed
 + rating: 4.5 (number, required) - Decimal rating value
 + products_count: 114 (number, required) - Total number of products 
-+ addresses (array[Address])
 + payment_types (array[PaymentType], required)
 + delivery_types (array[DeliveryType], required)
 + orders_count: 100 (number, required) - Number of orders
@@ -1270,7 +1380,7 @@ The Object that contains info about possible target destination
 
 ### Shop Extended
 + Include Shop
-+ 
++ addresses (array[Address])
 
 ### SKU (string) - Stock Keeping Unit
 
@@ -1279,9 +1389,9 @@ The Object that contains info about possible target destination
 + ok
 + google
 
-### Video
-+ url: https://cdn_url_video.m3u8 (string, required) - Video streem url
-+ thumbnail: https://thumbnail_cdn_href (string, required) - Thumbnail url
+### Sort Order (enum)
++ asc - Ascending
++ desc - Descending
 
 ### `URL_string` (string)
 
@@ -1322,8 +1432,7 @@ The Object that contains info about possible target destination
 + sku: sku_id_example (SKU, required) - SKU identifier of a combination
 + title: Article123 (string, required) - text for the variant
 + attributes (array[Attribute]) - Array of attributes like color, size, custom
-+ images: <image1_cdn_href>, <image2_cdn_href> (array[string], optional) - Array of image urls 
-+ videos (array[Video], optional) 
++ media_items (array[Media Item], required)
 + is_available: true (boolean, required) - is the variant available or not
 + stock_count: 5 (number, required) - number of units
 
