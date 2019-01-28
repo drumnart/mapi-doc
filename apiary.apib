@@ -982,15 +982,15 @@ i.e. User Profile
             
      + Attributes
         - data
-            - total_count: 1 (number, required) - Total number of units in cart
+            - item (Cart Item, required) - Added Cart Item
 
-### Delete item [DELETE /cart/items/{sku}]
-<!-- or /cart/{sku} -->
+### Delete items [DELETE /cart/items{?skus}]
+<!-- or /cart{?sku*} -->
 
-Удалить товар (sku) из корзины
+Удалить один или несколько товаров (sku) из корзины
 
 + Parameters
-    - sku (SKU, required, `sku_example`) - SKU
+    - skus (array[SKU], required) - Array of items (SKUs) to delete 
     
 + Request
    
@@ -1010,7 +1010,7 @@ i.e. User Profile
             
     + Attributes
         - data
-            - count: 0 (number, required)
+            - ack: true (boolean, required) - Acknowledge that item was deleted
 
 ## Quantity [/cart/items/count]
 <!-- or /cart/count -->
@@ -1209,7 +1209,7 @@ i.e. User Profile
 + destination (Destination, required)
 
 ### Cart
-+ results (array[Cart Item], required) - array of cart items
++ items (array[Cart Item], required) - array of cart items
 + total_count: 1 (number, required) - Total number of units
 + total_price (Price, required) - Final total price
 + total_promo (Price, required) - Total value of all applied promos
