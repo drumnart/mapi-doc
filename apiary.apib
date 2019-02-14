@@ -433,6 +433,154 @@ i.e. User Profile
         - data
             - gender (Gender, required)
 
+## Billing Info [/me/billing]
+
+### Get [GET]
+
+Получение списка доступных вариантов оплаты и списка банковсих карт
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+
++ Response 200 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data
+            - cards (array[Bank Card])
+            - payment_variants (array)
+                - (object)
+                    - variant (Payment Variant)
+                    - is_preferable: true (boolean) - Whether this variant was selected as preferable
+
+### Set [PUT /me/billing/select]
+
+Выбрать предпочтительный вариант оплаты.
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+            
+    + Attributes
+        - variant (Payment Variant)
+
++ Response 200 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data
+            - cards (array[Bank Card])
+            - payment_variants (array)
+                - (object)
+                    - variant (Payment Variant)
+                    - is_preferable: true (boolean) - Whether this variant was selected as preferable
+
+## Bank cards [/me/billing/cards]
+
+### Add Bank Card [POST]
+
+Добавление банковской карты
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+            
+    + Attributes
+        - token: 334b76e423e14d37101cceed318d2cfe7bdd2748 (string) - Token received from payment provider
+        - type: card_type (string) - Card Type
+        - last4: 2321 (string) - last 4 digits from card number
+        - expiry: `2019-01-28T17:39:57.620Z` (string) - Date of card expiration
+        - cardholder: Name1 Name2 (string) - Name of a card holder
+
++ Response 200 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data
+            - card (Bank Card)
+
+### Set preferable card [PUT /me/billing/cards/{id}]
+
+Выбрать основную карту для оплаты.
+
++ Parameters
+    - id: <id> (string) - Identifier of the card to mark as preferable 
+
++ Request
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: ru-RU
+    
++ Response 200 (application/json)
+
+    + Headers
+    
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data
+            - card (Bank Card) - Card that was marked as preferable
+
+### Delete Card [DELETE /me/billing/cards/{id}]
+
+Удаление карты из списка добавленных карт.
+
++ Parameters
+    - id: <id> (string) - Identifier of the card to delete 
+    
++ Request
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: ru-RU
+    
++ Response 200 (application/json)
+
+    + Headers
+    
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data
+            - ack: true (boolean, required) - Acknowledge that card was deleted
+
 ## Interests [/me/interests]
 <!-- or [/users/me/interests] -->
 
@@ -456,7 +604,7 @@ i.e. User Profile
             
     + Attributes
         - data 
-            - results (array[Interest], required)
+            - results (array[Interest])
 
 ### Update personal interests [POST]
 
@@ -470,8 +618,8 @@ i.e. User Profile
             
     + Attributes
         - interests_diff
-            - excluded: id1, id2 (array[string], required) - List of ids to delete from personal interests
-            - included: id3, id4 (array[string], required) - List of ids to add to personal interests 
+            - excluded: id1, id2 (array[string]) - List of ids to delete from personal interests
+            - included: id3, id4 (array[string]) - List of ids to add to personal interests 
 
 + Response 200 (application/json)
 
@@ -483,7 +631,7 @@ i.e. User Profile
             
     + Attributes
         - data 
-            - results (array[Interest], required)
+            - results (array[Interest])
 
 # Group Interests
 
@@ -511,7 +659,7 @@ i.e. User Profile
             
     + Attributes
         - data 
-            - results (array[Interest], required)
+            - results (array[Interest])
 
 # Group Categories
 
@@ -574,7 +722,7 @@ i.e. User Profile
             
     + Attributes
         - data 
-            - category (Category, required)
+            - category (Category)
 
 # Group Feeds
 
@@ -923,7 +1071,7 @@ i.e. User Profile
 
 # Group Cart
 
-## Cart Items [/cart]
+## Cart [/cart]
 
 ### Retrieve Cart [GET]
 
@@ -949,14 +1097,10 @@ i.e. User Profile
         - data
             - Include Cart
 
-### Add to Cart [POST /cart/items/{sku}]
+### Add to Cart [POST /cart/items]
 <!-- or /cart/{sku} -->
 
 Добавление товара в корзину.
-
-+ Parameters
-    
-    - sku: sku_example (SKU, required) - SKU
 
 + Request (application/json)
    
@@ -967,8 +1111,8 @@ i.e. User Profile
             Accept-Language: ru-RU
              
     + Attributes
-        - id: <product_id> (string, optional)
-        - sku: <sku_example> (SKU, required)
+        - id: <product_id> (string)
+        - sku: <sku_example> (SKU, optional)
         - count: 1 (number, required)
         - attributes (object) - size, color or custom attributes - ??
              
@@ -982,15 +1126,15 @@ i.e. User Profile
             
      + Attributes
         - data
-            - item (Cart Item, required) - Added Cart Item
+            - item (Cart Item) - Added Cart Item
 
-### Delete items [DELETE /cart/items{?skus}]
+### Delete items [DELETE /cart/items{?ids}]
 <!-- or /cart{?sku*} -->
 
 Удалить один или несколько товаров (sku) из корзины
 
 + Parameters
-    - skus (array[SKU], required) - Array of items (SKUs) to delete 
+    - ids (array[string], required) - Array of cart items to delete 
     
 + Request
    
@@ -1012,7 +1156,7 @@ i.e. User Profile
         - data
             - ack: true (boolean, required) - Acknowledge that item was deleted
 
-## Quantity [/cart/items/count]
+## Items Quantity [/cart/items/count]
 <!-- or /cart/count -->
 
 ### Get Total [GET]
@@ -1039,13 +1183,13 @@ i.e. User Profile
         - data
             - total_count: 1 (number, required) - Total number of units in the cart
 
-### Get Count [GET /cart/items/{sku}/count]
+### Get Count [GET /cart/items/{id}/count]
 <!-- or /cart/count -->
 
 Получить количество единиц одного товара (sku).
 
 + Parameters
-    + sku (SKU, required, `sku_example`) - SKU
+    + id (string, `id_example`) - Cart Item identifier
 
 + Request
    
@@ -1068,13 +1212,13 @@ i.e. User Profile
             - count: 1 (number, required) - Number of pcs. for the item
 
 
-### Set Count [PUT /cart/items/{sku}/count]
+### Set Count [PUT /cart/items/{id}/count]
 <!-- or /cart/count -->
 
 Задать количество единиц товара в корзине (>= 0).
 
 + Parameters
-    + sku (SKU, required, `sku_example`) - SKU
+    + id (string, `id_example`) - Cart Item identifier
 
 + Request (application/json)
    
@@ -1085,8 +1229,6 @@ i.e. User Profile
             Accept-Language: ru-RU
              
     + Attributes
-        
-        - id: <product_id> (string, optional)
         - count: 1 (number, required)
     
 + Response 200 (application/json)
@@ -1099,9 +1241,9 @@ i.e. User Profile
             
     + Attributes
         - data
-            - count: 1 (number, required) - Number of pcs. for the item
+            - item (Cart Item) - Cart Item object with updated pieces count
 
-## Promo code [/cart/items/{sku}/promo]
+## Promo code [/cart/items/{id}/promo]
 <!-- or /cart/{sku}/promo -->
 
 ### Activate [POST]
@@ -1109,7 +1251,7 @@ i.e. User Profile
 Активировать промо код для элемента корзины
 
 + Parameters
-    + sku (SKU, required, `sku_example`) - SKU
+    + id (string, `id_example`) - Cart Item identifier
     
 + Request (application/json)
    
@@ -1139,7 +1281,7 @@ i.e. User Profile
 Деактивировать промо код для элемента корзины
 
 + Parameters
-    + sku (SKU, required, `sku_example`) - SKU
+    + id (string, `id_example`) - Cart Item identifier
     
 + Request (application/json)
    
@@ -1163,9 +1305,334 @@ i.e. User Profile
 
 # Group Checkout
 
+## Related Info [/checkout]
+
+### Get [GET]
+
+Получить доп. информацию, необходимую для оформления заказа.
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+
++ Response 200 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        + data
+            - payment_variants (array[Payment Variant])
+
 # Group Orders
 
+## Collection [/orders]
+
+### List [GET /orders{?statuses,search_query,page,limit,sort_field,sort_order}]
+
+Получить список заказов
+
++ parameters
+    - statuses: 0, 1 (optional, array[number]) - Array of order statuses to retrieve
+    - search_query: `123456` (optional) - Text to search, e.g. order number or product name
+    - limit: 20 (optional, number) - Max quantity of records per page
+    - page: 1 (optional, number) - Index of a page
+    - sort_field (optional, string) - Field name for sorting
+        - default: updated_at
+    - sort_order (optional, Sort Order) - Sorting order
+         - default: desc
+    
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+
++ Response 200 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        + data
+            - results (array[Order], required)
+            - active: 10 (number, required) - Number of active orders
+            - completed: 0 (number, required) - Number of completed orders
+            - navigation (Navigation, required)
+
+## Count [/orders/count]
+
+### Get [GET]
+
+Получить количество заказов.
+
++ Request
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: ru-RU
+             
++ Response 200 (application/json)
+    
+    + Headers
+    
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data
+            - statuses_count (array)
+                - (object)
+                    - status (Order Status)
+                    - count: 10 (number)
+            - active: 10 (number) - Number of active orders
+            - completed: 0 (number) - Number of completed orders
+            - total: 10 (number) - Total number of orders
+
+## Single Order [/orders/{id}]
+
+### Get [GET]
+
+Получить заказ по его ID
+
++ Parameters
+    + id (string, `3918QQ8`) - Order identifier 
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+            
++ Response 200 (application/json)
+    
+    + Attributes
+        - data 
+            - order (Order)
+
+## Order Placement [/orders/create]
+
+### Place Order [POST]
+
+Размещение заказа. 
+Если у пользователя еще нет сохраненных адресов, то передается полностью заполненный объект Address за исключением поля id (бэкенд сохраняет адрес), 
+иначе в объекте Address достаточно передавать только id. 
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: ru-RU
+            
+    + Attributes
+        - address (Address)
+        - items (array)
+            - (object)
+                - id: <item_id> (string) - Item identifier
+                - count: 1 (number) - Number of pieces
+        - billing
+            - payment_variant: 0 (Payment Variant)
+            - customer_token: 334b76e423e14d37101cceed318d2cfe7bdd2748 (string) - Token given by payment provider
+             
++ Response 200 (application/json)
+    
+    + Headers
+    
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data
+            - order (Order)
+
+## Delivery  [/orders/{id}/delivery]
+
+### Report issue [POST /orders/{id}/delivery/report_issue]
+
+Сообщить, что заказ не был доставлен.
+
++ Parameters
+    + id (string, `3918QQ8`) - Order identifier 
+
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: ru-RU
+            
+    + Attributes
+        - email: `example@example.com` (string) - User email for contact
+             
++ Response 200 (application/json)
+    
+    + Headers
+    
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data
+            - message: Something like: Thank you. Our support team will contact you ASAP. (string) - Number of comments for the product
+
+### Confirm delivery [POST /orders/{id}/delivery/confirm]
+
+Подтвердить доставку и оставить отзыв (c возможностью отправки фото и видео).
+
++ Parameters
+    + id (string, `3918QQ8`) - Order identifier 
+
++ Request (multipart/form-data; boundary={boundary value})
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: ru-RU
+            
+    + Attributes
+        - rating: 5 (number) - Rating given by user
+        - is_anonymous: false (boolean) - Whether the review is made anonymously
+        - body: Text of review (string, optional) - Review of the product
+    
+    + Body
+        
+            --{boundary value}
+                Content-Disposition: form-data; name="image"; filename="image.png"
+                Content-Type: image/png
+        
+                {file content}
+            --{boundary value}--
+    
++ Response 200 (application/json)
+    
+    + Headers
+    
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data
+            - order (Order)
+
 # Group Comments
+
+## Product Comments [/products/{id}/comments]
+    
+### Get Count [GET /products/{id}/comments/count]
+
+Получить количество комментариев.
+
++ Parameters
+    + id (string, `1`) - Product identifier 
+
++ Request
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: ru-RU
+             
++ Response 200 (application/json)
+    
+    + Headers
+    
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data
+            - count: 1 (number) - Number of comments for the product
+
+### Fetch [GET /products/{id}/comments{?limit,page,sort_order,sort_field}]
+
+Получить список комментариев
+
++ parameters
+    - id: 1 (string) - Product identifier
+    - limit: 20 (optional, number) - Max quantity of records per page
+    - page: 1 (optional, number) - Index of a page
+    - sort_field (optional, string) - Field name for sorting
+        - default: created_at
+    - sort_order (optional, Sort Order) - Sort order
+         - default: desc
+    
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: en-US
+
++ Response 200 (application/json)
+
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+    + Attributes
+        - data
+            - results (array[Comment])
+            - navigation (Navigation)
+
+### Send or Reply [POST /products/{product_id}/comments]
+
+Создать комментарий или ответ. Если в объекте Comment заполнены поля `parent_id` и `is_reply`, 
+то комментарий создается как ответ на другой комментарий.
+
++ parameters
+    - product_id (string, required, `1`) - Product identifier
+    
++ Request (application/json)
+   
+    + Headers
+       
+            x-mapi-access-token: `access_token`
+            x-mapi-key: xxxxxxxxxxxxxxxx
+            Accept-Language: ru-RU
+             
+    + Attributes
+        - comment (Comment)
+             
++ Response 200 (application/json)
+
+     + Headers
+    
+            x-mapi-access-token: `access_token`
+            x-mapi-access-exp: 2019-01-28T17:39:57.620Z
+            x-mapi-version: 1.0
+            
+     + Attributes
+        - data
+            - item (Comment) - Created Comment
 
 # Group Reviews
 <!-- TODO Later -->
@@ -1208,6 +1675,15 @@ i.e. User Profile
 + image: https://banner_cdn_href (string, required)
 + destination (Destination, required)
 
+### Bank Card
++ id: <card_id> (string) - The unique identifier for bank card
++ number: `5465********2321` (string) - Card number, partially
++ last4: 2321 (string) - Last 4 symbols of the card number
++ type: card_type (string) - Card type
++ expiry: `2019-01-28T17:39:57.620Z` (string) - Date of card expiration
++ icon_url: `image_cdn_href` (string) - URL of card icon
++ is_preferable: true (boolean) - Whether this card was selected as preferable
+
 ### Cart
 + items (array[Cart Item], required) - array of cart items
 + total_count: 1 (number, required) - Total number of units
@@ -1216,10 +1692,11 @@ i.e. User Profile
 + received_at: `2017-06-01T18:06:28.620Z` (required) - date-time of cart retriving
 
 ### Cart Item
-+ id: <item_id> (required) - The unique identifier for cart item
-+ sku: sku_id_example (SKU, required) - SKU identifier
-+ product (Product, required)
-+ promo_applied (boolean, required) - Is promo code applied to product
++ id: <item_id> (string) - The unique identifier for cart item
++ sku: sku_id_example (SKU) - SKU identifier
++ pcs_count: 2 (number) - Number of pieces
++ product (Product)
++ promo_applied (boolean) - Is promo code applied to product
 
 ### Category Base
 + id: 310 (string, required) - The unique identifier for a category
@@ -1234,14 +1711,24 @@ i.e. User Profile
 + children (array[Category], required) - Array of subcategories
 + products_count: 14 (number, required) - Number of products on this level
 + is_interest: true (boolean, required) - Whether this category is interest or not
-+ is_my_interest: false (boolean, required) - Whether this category is belongs to interests of current user or not
++ is_my_interest: false (boolean, required) - Whether this category belongs to interests of current user or not
+
+### Comment
++ id: <commentID> (string, required) - The unique identifier for a comment
++ parent_id: <commentID> (string, required) - The unique identifier for a comment
++ is_shop: false (boolean, required) - Whether this comment belongs to the shop
++ is_reply: false (boolean, required) - Whether this comment is reply to another comment
++ user (User, required)
++ created_at: `2017-06-01T18:06:28.620Z` (required) - Date-time of comment creation
++ text: Amazing! I wanna get one! (string, required) - comment text
++ replies (array[Comment], required) - Array of Replies to the comment
 
 ### Content Block
 + subtitle: BlockTitle (string, optional)
 + text: Long text (string, optional)
 + image: <image_cdn_href> (string, optional)
 
-### DeliveryType (enum)
+### Delivery Type (enum)
 + 0 (number) - pickup
 + 1 (number) - courier
 
@@ -1288,9 +1775,42 @@ The Object that contains info about possible target destination
 + page_size: 10 (required, number) - Number of items per page
 + page_count: 10000 (required, number) - Number of pages
 
-### PaymentType (enum)
+### Order
++ id: <id> (string, required) - The unique identifier of the order
++ number: 3918QQ8 (string) - The Number of the order
++ status (Order Status)
++ status_text: Package delivered - Short description for order status
++ delivery_deadline: `2017-06-01T18:06:28.620Z` - Deadline to deliver the order
++ shipping_date: `2017-06-01T18:06:28.620Z` - The date-time the order was shipped
++ created_at: `2017-06-01T18:06:28.620Z` - Date-time of order creation
++ updated_at: `2017-06-28T17:39:57.620Z` - Date-time of last order update
++ product (Product)
++ sku (SKU)
++ pcs_count: 1 (number) - Number of pieces 
++ price (Price) - Total price
++ receiver (Address)
++ shipping (Shipping, required) - Info about shipping
++ is_active: true (boolean) - Where the order is in active state or not. Depends on statuses state machine, e.g. order is active if status equals to awaiting shipment or shipped.
++ thumbnail: https://order_thumbnail_image_cdn_href (string) - URL of Thumbnail image
+
+### Order Status (enum)
++ 0 (number) - awaiting_shipment
++ 1 (number) - shipped
++ 2 (number) - delivered
++ 3 (number) - not_delivered
++ 4 (number) - refunded
+
+### Payment Type (enum)
 + 0 (number) - cash 
 + 1 (number) - bank_card
+
+### Payment Variant (enum)
++ 0 (number) - bank_card 
++ 1 (number) - paypal
++ 2 (number) - yandex_money
+
+### Payment Provider (enum)
++ 0 (number) - Stripe
 
 ### Price
 + currency: USD (string, required)
@@ -1321,6 +1841,9 @@ The Object that contains info about possible target destination
     + value: null 
 + rating: 4.9 (number, required) - Decimal rating of the product
 + reviews_count: 217 (number, required) - Number of reviews
++ comments
+    + total_count: 57 (number, required) - Number of comments
+    + recent (array[Comment], required) - Array of top N comments related to the product
 
 ### Product Extended
 + Include Product
@@ -1371,8 +1894,8 @@ The Object that contains info about possible target destination
     + cover: https://cover_avatar_cdn_href (string, optional) - Shop background url if needed
 + rating: 4.5 (number, required) - Decimal rating value
 + products_count: 114 (number, required) - Total number of products 
-+ payment_types (array[PaymentType], required)
-+ delivery_types (array[DeliveryType], required)
++ payment_types (array[Payment Type], required)
++ delivery_types (array[Delivery Type], required)
 + orders_count: 100 (number, required) - Number of orders
 + likes_count: 45 (number, required) - Number of likes
 + stock_count: 500 (number, required) - Number of units
@@ -1418,13 +1941,14 @@ The Object that contains info about possible target destination
 ### User Review
 + id: <reviewID> (string, required) - The unique identifier for a review
 + rating: 5 (number, required) - Rating given by user
-+ user (User, required)
++ is_anonymous: false (boolean) - Whether the review is made anonymously
++ user (User, required) - User object or Null if the review is anonymous.
 + created_at: `2017-06-01T18:06:28.620Z` (required) - Date-time of review creation
 + updated_at: `2017-06-28T17:39:57.620Z` (required) - Date-time of review updte
 + title: Title (optional)
 + body: Text of review (required)
 + is_my: false (required) - Whether this review is user's own review or not
-+ i_liked: true (required) - Whether user liked this review or not
++ is_liked: true (required) - Whether user liked this review or not
 + likes_count: 4 (required) - Number of likes
 + pics (array[URL_string], required) - Images uploaded by user
 
